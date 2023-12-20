@@ -30,6 +30,9 @@ export async function formattedCode(sections: {
 }
 
 async function format(text: string) {
+  if (text.startsWith("\n")) {
+    return text;
+  }
   return await prettier.format(text, {
     parser: "typescript",
     printWidth: 65,

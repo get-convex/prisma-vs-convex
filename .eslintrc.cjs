@@ -9,6 +9,7 @@ module.exports = {
     "convex/_generated",
     // There are currently ESLint errors in shadcn/ui
     "components/ui",
+    "code/",
   ],
   parserOptions: {
     project: true,

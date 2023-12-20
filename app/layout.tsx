@@ -5,8 +5,8 @@ import { Inter } from "next/font/google";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "My App Title",
-  description: "My app description",
+  title: "Prisma vs Convex",
+  description: "Compare Prisma examples with Convex",
 };
 
 export default function RootLayout({
