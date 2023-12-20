@@ -5,7 +5,7 @@ import { Link } from "@/components/typography/link";
 
 export default async function Home() {
   return (
-    <main className="flex flex-col gap-8 px-4 max-w-screen-2xl mx-auto">
+    <main className="flex flex-col gap-8 px-4 max-w-screen-2xl mx-auto pb-4">
       <h1 className="text-4xl font-extrabold my-8 text-center">
         Prisma vs Convex
       </h1>
