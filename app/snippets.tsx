@@ -32,7 +32,7 @@ q.search("name", "Ada")).first();`,
       },
       {
         prisma: `// Select specific fields
-const userName = await prisma.user.findUnique({
+const user = await prisma.user.findUnique({
   where: {
     email: 'ada@prisma.io',
   },
@@ -44,7 +44,7 @@ const userName = await prisma.user.findUnique({
         convex: `// Select specific fields
 const {name, email} = (await ctx.db.query("users").withIndex("email", q=>
 q.eq("email", "ada@prisma.io")).unique()) ?? {};
-const userName = {name, email}`,
+const user = {name, email}`,
       },
     ],
     "Traverse Relations": [
@@ -138,12 +138,12 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
         const prolificAuthors: Category[] = await prisma.user.findMany({
           orderBy: {
             posts: {
-              _count: 'asc',
+              _count: 'desc',
             },
           },
         })`,
         convex: `// Order by most prolific authors
-        const prolificAuthors = await ctx.db.query("users").withIndex("postCount").collect()`,
+        const prolificAuthors = await ctx.db.query("users").withIndex("postCount").order("desc").collect()`,
       },
       {
         prisma: `// Find the second page of posts
@@ -169,7 +169,7 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
         prisma: `// Count the number of users
         const count = await prisma.user.count()`,
         convex: `// Count the number of users - small numbers
-        const count = (await ctx.db.query("users")).length
+        const count = (await ctx.db.query("users").collect()).length
         
         // Count the number of users - big numbers
         const count = await ctx.db.get(userCounterId)`,
@@ -194,7 +194,7 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
           },
         })`,
         convex: `// Group users by country
-        const groupUsers = (await ctx.db.query("users")).reduce(
+        const groupUsers = (await ctx.db.query("users").collect()).reduce(
           (counts, { country }) => ({
             ...counts,
             [country]: counts[country] ?? 0 + 1,
@@ -204,7 +204,7 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
 
         // imperative if you prefer
         const groupUsers = {}
-        for (const {country} of await ctx.db.query("users")) {
+        for (const {country} of await ctx.db.query("users").collect()) {
           groupUsers[country] ??= 0
           groupUsers[country]++
         }`,
@@ -225,7 +225,7 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
           },
         })`,
         convex: `// Group users by country with more than 3 users.
-        const usersByCountry = (await ctx.db.query("users")).reduce(
+        const usersByCountry = (await ctx.db.query("users").collect()).reduce(
           (counts, user) => ({
             ...groups,
             [user.country]: [...(groups[user.country] ?? []), user],
