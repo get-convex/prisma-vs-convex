@@ -1,7 +1,7 @@
 import * as prettier from "prettier";
 
 export async function formattedCode(sections: {
-  [key: string]: { [key: string]: { prisma: string; convex: string }[] };
+  [key: string]: { [key: string]: { [key in string]?: string }[] };
 }) {
   return (
     await Promise.all(
@@ -12,13 +12,25 @@ export async function formattedCode(sections: {
               async (subsection) =>
                 await Promise.all(
                   sections[section][subsection].map(
-                    async ({ prisma, convex }) =>
+                    async (versions) =>
                       [
                         section,
                         subsection,
-                        await format(prisma),
-                        await format(convex ?? ""),
-                      ] as [string, string, string, string]
+                        (
+                          await Promise.all(
+                            Object.keys(versions).map(async (key) => [
+                              key,
+                              await format(versions[key]!),
+                            ])
+                          )
+                        ).reduce(
+                          (formatted, [key, code]) => ({
+                            ...formatted,
+                            [key]: code,
+                          }),
+                          {}
+                        ),
+                      ] as [string, string, Record<string, string>]
                   )
                 )
             )

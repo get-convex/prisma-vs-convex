@@ -5,6 +5,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toggle } from "@/components/ui/toggle";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function Browser({
   sections,
@@ -13,17 +22,18 @@ export function Browser({
   sections: {
     [key: string]: { [key: string]: { prisma: string; convex: string }[] };
   };
-  formattedCodes: [string, string, string, string][];
+  formattedCodes: [string, string, Record<string, string>][];
 }) {
   const [showAll, setShowAll] = useState(false);
   const [selected, setSelected] = useState([
     Object.keys(sections)[0],
     Object.keys(Object.values(sections)[0])[0],
   ]);
+  const [convexVariant, setConvexVariant] = useState("convex");
   return (
     <div className="flex flex-col gap-8">
       <div className="flex justify-between">
-        <div>
+        <div className="flex-grow">
           <Tabs
             value={selected[0]}
             className={cn(showAll ? "opacity-0" : "opacity-100")}
@@ -61,12 +71,27 @@ export function Browser({
             ))}
           </Tabs>
         </div>
+        {selected[0] === "Reading Data" &&
+        selected[1] === "Traverse Relations" ? (
+          <Select value={convexVariant} onValueChange={setConvexVariant}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Convex Variant</SelectLabel>
+                <SelectItem value="convex">Vanilla</SelectItem>
+                <SelectItem value="convexHelpers">convex-helpers</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        ) : null}
         <Toggle pressed={showAll} onPressedChange={() => setShowAll(!showAll)}>
           Show all
         </Toggle>
       </div>
       <div className="font-mono flex flex-col gap-8">
-        {formattedCodes.map(([section, subsection, prisma, convex], i) => (
+        {formattedCodes.map(([section, subsection, versions], i) => (
           <div
             key={i}
             className={cn(
@@ -76,8 +101,10 @@ export function Browser({
                 : "hidden"
             )}
           >
-            <CodeBlock text={prisma.trim()} />
-            <CodeBlock text={convex.trim()} />
+            <CodeBlock text={versions["prisma"].trim()} />
+            <CodeBlock
+              text={(versions[convexVariant] ?? versions["convex"]).trim()}
+            />
           </div>
         ))}
       </div>

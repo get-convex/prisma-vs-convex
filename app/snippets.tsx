@@ -5,7 +5,7 @@ export const SECTIONS = {
         prisma: `// Find all posts
 const allPosts: Post[] = await prisma.post.findMany()`,
         convex: `// Find all posts
-const allPosts = ctx.db.query("posts").collect()`,
+const allPosts = await ctx.db.query("posts").collect()`,
       },
       {
         prisma: `// Find a user by ID
@@ -15,7 +15,7 @@ const userById: User | null = await prisma.user.findUnique({
   },
 })`,
         convex: `// Find a user by ID
-const userById = ctx.db.get(id)`,
+const userById = await ctx.db.get(id)`,
       },
       {
         prisma: `// Find the first user that contains Ada
@@ -50,17 +50,25 @@ const user = {name, email}`,
     "Traverse Relations": [
       {
         prisma: `// Retrieve the posts of a user
-const postsByUser: Post[] = await prisma.user
-  .findUnique({ where: { email: 'ada@prisma.io' } })
-  .posts()`,
+        const postsByUser: Post[] = await prisma.user
+          .findUnique({ where: { email: 'ada@prisma.io' } })
+          .posts()`,
         convex: `// Retrieve the posts of a user
-const user = (await ctx.db.query("users").withIndex("email", q=>
-q.eq("email", "ada@prisma.io")).unique());
-if (user === null) {
-  throw new Error("User not found")
-}
-const postsByUser = await ctx.db.query("posts").withIndex("authorId", q=>
-q.eq("authorId", user._id)).collect()`,
+        const user = (await ctx.db.query("users").withIndex("email", q=>
+        q.eq("email", "ada@prisma.io")).unique());
+        if (user === null) {
+          throw new Error("User not found")
+        }
+        const postsByUser = await ctx.db.query("posts").withIndex("authorId", q=>
+        q.eq("authorId", user._id)).collect()`,
+        convexHelpers: `// Retrieve the posts of a user
+        const user = (await ctx.db.query("users").withIndex("email", q=>
+        q.eq("email", "ada@prisma.io")).unique());
+        if (user === null) {
+          throw new Error("User not found")
+        }
+        // requires correct index naming
+        const postsByUser = await getManyFrom("posts", "authorId", user._id)`,
       },
       {
         prisma: `// Retrieve the categories of a post
@@ -68,12 +76,10 @@ const categoriesOfPost: Category[] = await prisma.post
   .findUnique({ where: { id: 1 } })
   .categories()`,
         convex: `// Retrieve the categories of a post
-        const post = await ctx.db.get(postId)
-        if (post === null) {
-          throw new Error("Post not found")
-        }
         const categoriesOfPost = await ctx.db.query("categories").withIndex("postId", q=>
-        q.eq("postId", post._id)).collect()`,
+        q.eq("postId", postId)).collect()`,
+        convexHelpers: `// Retrieve the categories of a post
+        const postsByUser = await getManyFrom("categories", "postId", postId)`,
       },
       {
         prisma: `// Retrieve the profile of a user via a specific post
@@ -103,6 +109,13 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
             profile: await ctx.db.query("profiles").withIndex("userId", q=>
             q.eq("userId", user._id)).unique(),
           })))`,
+        convexHelpers: `// Return all users and include their posts and profile
+          const users = await Promise.all((await ctx.db.query("users").collect())
+          .map(async user => ({
+            ...user,
+            posts: await getMany("posts", "authorId", user._id),
+            profile: await getOneFrom("profiles", "userId", user._id),
+          })))`,
       },
       {
         prisma: `// Select all users and all their post titles
@@ -121,6 +134,11 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
           ...user,
           posts: (await ctx.db.query("posts").withIndex("authorId", q=>
           q.eq("authorId", user._id)).collect()).map(({title}) => title),
+          })))`,
+        convexHelpers: `// Select all users and all their post titles
+        const userPosts = await Promise.all((await ctx.db.query("users").collect()).map(async user => ({
+          ...user,
+          posts: (await getMany("posts", "authorId", user._id)).map(({title}) => title),
           })))`,
       },
     ],
