@@ -797,7 +797,7 @@ enum Role {
             .index("categoryId", ["categoryId"]),
         });
         `,
-        convexEnts: `// This is your optional Convex schema.
+        convexEnts: `// This is your Convex ent schema.
         import { defineEntSchema, defineEnt } from "convex/server";
         import { v } from "convex/values";
         
