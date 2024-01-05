@@ -29,10 +29,11 @@ export function Browser({
     Object.keys(sections)[0],
     Object.keys(Object.values(sections)[0])[0],
   ]);
-  const [convexVariant, setConvexVariant] = useState("convex");
+  const [left, setLeft] = useState("prisma");
+  const [right, setRight] = useState("convex");
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex justify-between">
+    <div className="flex flex-col">
+      <div className="flex justify-between sticky top-0 z-50 bg-background/90 py-4 gap-2">
         <div className="flex-grow">
           <Tabs
             value={selected[0]}
@@ -71,21 +72,8 @@ export function Browser({
             ))}
           </Tabs>
         </div>
-        {selected[0] === "Reading Data" &&
-        selected[1] === "Traverse Relations" ? (
-          <Select value={convexVariant} onValueChange={setConvexVariant}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Convex Variant</SelectLabel>
-                <SelectItem value="convex">Vanilla</SelectItem>
-                <SelectItem value="convexHelpers">convex-helpers</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        ) : null}
+        <VariantSelector value={left} onValueChange={setLeft} />
+        <VariantSelector value={right} onValueChange={setRight} />
         <Toggle pressed={showAll} onPressedChange={() => setShowAll(!showAll)}>
           Show all
         </Toggle>
@@ -101,13 +89,50 @@ export function Browser({
                 : "hidden"
             )}
           >
-            <CodeBlock text={versions["prisma"].trim()} />
-            <CodeBlock
-              text={(versions[convexVariant] ?? versions["convex"]).trim()}
-            />
+            <CodeBlock text={variant(versions, left)} />
+            <div className="flex">
+              <div className="flex-grow">
+                <CodeBlock text={variant(versions, right)} />
+              </div>
+              <div className="w-0 overflow-hidden flex">
+                {Object.keys(versions).map((key) => (
+                  <CodeBlock key={key} text={versions[key]} />
+                ))}
+              </div>
+            </div>
           </div>
         ))}
       </div>
     </div>
+  );
+}
+
+function variant(versions: Record<string, string>, variant: string) {
+  return variant === "convex-helpers"
+    ? versions[variant] ?? versions["convex"]
+    : versions[variant] ?? "// Example not translated yet";
+}
+
+function VariantSelector({
+  value,
+  onValueChange,
+}: {
+  value: string;
+  onValueChange: (value: string) => void;
+}) {
+  return (
+    <Select value={value} onValueChange={onValueChange}>
+      <SelectTrigger className="w-[180px]">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          <SelectItem value="prisma">Prisma Client</SelectItem>
+          <SelectItem value="convex">Convex Vanilla</SelectItem>
+          <SelectItem value="convexHelpers">convex-helpers</SelectItem>
+          <SelectItem value="convexEnts">Convex Ents</SelectItem>
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 }

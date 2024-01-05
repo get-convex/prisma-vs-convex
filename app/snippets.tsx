@@ -6,6 +6,8 @@ export const SECTIONS = {
 const allPosts: Post[] = await prisma.post.findMany()`,
         convex: `// Find all posts
 const allPosts = await ctx.db.query("posts").collect()`,
+        convexEnts: `// Find all posts
+const allPosts = await ctx.table("posts")`,
       },
       {
         prisma: `// Find a user by ID
@@ -16,6 +18,8 @@ const userById: User | null = await prisma.user.findUnique({
 })`,
         convex: `// Find a user by ID
 const userById = await ctx.db.get(id)`,
+        convexEnts: `// Find a user by ID
+const userById = await ctx.table("users").get(id)`,
       },
       {
         prisma: `// Find the first user that contains Ada
@@ -28,6 +32,9 @@ const userByName = await prisma.user.findFirst({
 })`,
         convex: `// Find the first user that contains Ada
 const userByName = await ctx.db.query("users").withSearchIndex("name", q=>
+q.search("name", "Ada")).first();`,
+        convexEnts: `// Find the first user that contains Ada
+const userByName = await ctx.table("users").search("name", q=>
 q.search("name", "Ada")).first();`,
       },
       {
@@ -45,6 +52,10 @@ const user = await prisma.user.findUnique({
 const {name, email} = (await ctx.db.query("users").withIndex("email", q=>
 q.eq("email", "ada@prisma.io")).unique()) ?? {};
 const user = {name, email}`,
+        convexEnts: `// Select specific fields
+        const {name, email} = await ctx.table("users")
+          .get("email", "ada@prisma.io")
+        return {name, email}`,
       },
     ],
     "Traverse Relations": [
@@ -69,6 +80,10 @@ const user = {name, email}`,
         }
         // requires correct index naming
         const postsByUser = await getManyFrom("posts", "authorId", user._id)`,
+        convexEnts: `// Retrieve the posts of a user
+        const postsByUser = await ctx.table("users")
+          .getX("email", "ada@prisma.io")
+          .edge("posts");`,
       },
       {
         prisma: `// Retrieve the categories of a post
@@ -79,7 +94,9 @@ const categoriesOfPost: Category[] = await prisma.post
         const categoriesOfPost = await ctx.db.query("categories").withIndex("postId", q=>
         q.eq("postId", postId)).collect()`,
         convexHelpers: `// Retrieve the categories of a post
-        const postsByUser = await getManyFrom("categories", "postId", postId)`,
+        const categoriesOfPost = await getManyFrom("categories", "postId", postId)`,
+        convexEnts: `// Retrieve the categories of a post
+        const categoriesOfPost = await ctx.table("posts").getX(postId).edge("categories")`,
       },
       {
         prisma: `// Retrieve the profile of a user via a specific post
@@ -91,6 +108,11 @@ const authorProfile: Profile | null = await prisma.post
 const post = await ctx.db.get(id);
 const author = post=== null ? null: await ctx.db.get(post.authorId)
 const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
+        convexEnts: `// Retrieve the profile of a user via a specific post
+        const post = await ctx.table("posts")
+          .get(id)
+          .edge("author")
+          .edge("profile");`,
       },
       {
         prisma: `// Return all users and include their posts and profile
@@ -116,6 +138,12 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
             posts: await getMany("posts", "authorId", user._id),
             profile: await getOneFrom("profiles", "userId", user._id),
           })))`,
+        convexEnts: `// Return all users and include their posts and profile
+          const users = await ctx.table("users").map(async (user) => ({
+            ...user,
+            posts: await user.edge("posts"),
+            profile: await user.edge("profiles"),
+          }));`,
       },
       {
         prisma: `// Select all users and all their post titles
@@ -131,15 +159,20 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
         })`,
         convex: `// Select all users and all their post titles
         const userPosts = await Promise.all((await ctx.db.query("users").collect()).map(async user => ({
-          ...user,
+          name: user.name,
           posts: (await ctx.db.query("posts").withIndex("authorId", q=>
           q.eq("authorId", user._id)).collect()).map(({title}) => title),
           })))`,
         convexHelpers: `// Select all users and all their post titles
         const userPosts = await Promise.all((await ctx.db.query("users").collect()).map(async user => ({
-          ...user,
+          name: user.name,
           posts: (await getMany("posts", "authorId", user._id)).map(({title}) => title),
           })))`,
+        convexEnts: `// Select all users and all their post titles
+        const userPosts = await ctx.table("users").map(async user => ({
+          name: user.name,
+          posts: await user.edge("posts").map(({title}) => title),
+          }))`,
       },
     ],
     "Order By, Limits & Cursors": [
@@ -150,6 +183,8 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
         })`,
         convex: `// Sort posts alphabetically
         const alphabeticPosts = await ctx.db.query("posts").withIndex("title").collect()`,
+        convexEnts: `// Sort posts alphabetically
+        const alphabeticPosts = await ctx.table("posts").order("asc", "title")`,
       },
       {
         prisma: `// Order by most prolific authors
@@ -161,7 +196,11 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
           },
         })`,
         convex: `// Order by most prolific authors
+        // materialize the count for efficient sorting
         const prolificAuthors = await ctx.db.query("users").withIndex("postCount").order("desc").collect()`,
+        convexEnts: `// Order by most prolific authors
+        // materialize the count for efficient sorting
+        const prolificAuthors = await ctx.table("users").order("desc", "postCount")`,
       },
       {
         prisma: `// Find the second page of posts
@@ -180,6 +219,8 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
         })`,
         convex: `// Find the last 5 posts
         const lastPosts = await ctx.db.query("posts").order("desc").take(5)`,
+        convexEnts: `// Find the last 5 posts
+        const lastPosts = await ctx.table("posts").order("desc").take(5)`,
       },
     ],
     "Aggregates & Group By": [
@@ -272,6 +313,13 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
             country: 'Italy',
             age: 30,})
         const user = await ctx.db.get(userId)`,
+        convexEnts: `// Create a user
+        const userId = await ctx.table("users").insert({
+          email: 'elsa@prisma.io',
+            name: 'Elsa Prisma',
+            country: 'Italy',
+            age: 30,})
+        const user = await ctx.table("users", userId)`,
       },
       {
         prisma: `// Create a user and two posts
@@ -310,6 +358,20 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
         })])
         const userWithPosts = {...await ctx.db.get(userId),
           posts: Promise.all(postIds.map(ctx.db.get))}`,
+        convexEnts: `// Create a user and two posts
+        const userId = await ctx.table("users").insert({
+          email: 'elsa@prisma.io',
+            name: 'Elsa Prisma',
+            country: 'Italy',
+            age: 30,})
+        await ctx.table("posts").insertMany({title: 'Include this post!',
+          authorId: userId
+        },{title: 'Include this post!',
+          authorId: userId
+        })
+        const user = await ctx.table("users").get(userId)
+        const userWithPosts = {...user,
+          posts: await user.edge("posts")}`,
       },
       {
         prisma: `// Create many users at once
@@ -356,6 +418,27 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
             age: 43,
           },
         ].map(data => ctx.db.insert("users", data)))`,
+        convexEnts: `// Create many users at once
+        const userIds = await ctx.table("users").insertMany([
+          {
+            name: 'Bob',
+            email: 'bob@prisma.io',
+            country: 'USA',
+            age: 24,
+          },
+          {
+            name: 'Yewande',
+            email: 'yewande@prisma.io',
+            country: 'Zimbabwe',
+            age: 19,
+          },
+          {
+            name: 'Angelique',
+            email: 'angelique@prisma.io',
+            country: 'Greece',
+            age: 43,
+          },
+        ])`,
       },
     ],
     "Update Records": [
@@ -370,12 +453,18 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
           },
         })`,
         convex: `// Update an existing user
-        const alice = await ctx.db.query("users").withIndex("email", q=>
+        let alice = await ctx.db.query("users").withIndex("email", q=>
         q.eq("email", "ada@prisma.io")).unique()
         if (alice === null) {
           throw new Error("User not found")
         }
-        await ctx.db.patch(alice._id, { role: 'ADMIN', })`,
+        await ctx.db.patch(alice._id, { role: 'ADMIN', })
+        alice = await ctx.db.get(alice._id)`,
+        convexEnts: `// Update an existing user
+        const alice = await ctx.table("users")
+          .getX("email", "ada@prisma.io")
+          .patch({ role: 'ADMIN', })
+          .get();`,
       },
       {
         prisma: `// Change the author of a post in a single transaction
@@ -392,16 +481,16 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
           },
         })`,
         convex: `// Change the author of a post in a single transaction
-        const post = await ctx.db.get(id)
-        if (post === null) {
-          throw new Error("Post not found")
-        }
         const author = await ctx.db.query("users").withIndex("email", q=>
         q.eq("email", "alice@prisma.io")).unique();
         if (author === null) {
           throw new Error("Author not found")
         }
-        await ctx.db.patch(post._id, { authorId: author._id })`,
+        await ctx.db.patch(postId, { authorId: author._id })
+        const updatedPost = await ctx.db.get(postId)`,
+        convexEnts: `// Change the author of a post in a single transaction
+        const author = await ctx.table("users").getX("email", "alice@prisma.io")
+        const updatedPost = await ctx.table("posts").getX(postId).patch({ authorId: author._id }).get()`,
       },
       {
         prisma: `// Connect a post to a user, creating the post if it isn't found
@@ -429,10 +518,14 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
         }
         const post = await ctx.db.get(postId)
         if (post === null) {
-          await ctx.db.insert("posts", {
-            title: 'The Gray Gatsby',
-            authorId: user._id
-          })
+          await ctx.db.insert("posts", { title: 'The Gray Gatsby', authorId: user._id })
+        }`,
+        convexEnts: `// Connect a post to a user, creating the post if it isn't found
+        const user = await ctx.table("users").getX(userId);
+        const post = await ctx.table("posts").get(postId)
+        if (post === null) {
+          await ctx.table("posts").insert({ 
+            title: 'The Gray Gatsby', authorId: user._id })
         }`,
       },
       {
@@ -448,7 +541,13 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
         convex: `// Update all users with the country Deutschland
         const users = await ctx.db.query("users").withIndex("country", q=>
         q.eq("country", "Deutschland")).collect()
-        await Promise.all(users.map(user => ctx.db.patch(user._id, {country: 'Germany'})))`,
+        await Promise.all(users.map(async user => {
+          await ctx.db.patch(user._id, {country: 'Germany'});
+          return ctx.db.get(user._id)
+        }))`,
+        convexEnts: `// Update all users with the country Deutschland
+        const users = await ctx.table("users", "country", q=>
+        q.eq("country", "Deutschland")).map(user => user.patch({country: 'Germany'}).get());`,
       },
     ],
     "Delete Records": [
@@ -463,6 +562,9 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
         const deletedUser = await ctx.db.query("users").withIndex("email", q=>
         q.eq("email", "alice@prisma.io")).unique()
         await ctx.db.delete(deletedUser._id)`,
+        convexEnts: `// Delete an existing user
+        const deletedUser = await ctx.table("users").getX("email", "alice@prisma.io")
+        await deletedUser.delete()`,
       },
       {
         prisma: `// Delete all the admins at once
@@ -475,6 +577,10 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
         const deletedAdmins = await ctx.db.query("users").withIndex("role", q=>
         q.eq("role", "ADMIN")).collect()
         await Promise.all(deletedAdmins.map(user => ctx.db.delete(user._id)))`,
+        convexEnts: `// Delete all the admins at once
+        const deletedAdmins = await ctx.table("users", "role", q=>
+        q.eq("role", "ADMIN"))
+        await Promise.all(deletedAdmins.map(user => user.delete()))`,
       },
     ],
     "Upsert Records": [
@@ -500,6 +606,7 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
         q.eq("email", "alice@prisma.io")).unique()
         if (alice !== null) {
           await ctx.db.patch(alice._id, {role: 'ADMIN'})
+          alice = await ctx.db.get(alice._id)
         } else {
           const id = await ctx.db.insert("users", {
             name: 'Alice',
@@ -510,6 +617,17 @@ const authorProfile = author===null?null: await ctx.db.get(author.profileId)`,
           });
           alice = await ctx.db.get(id)
         }`,
+        convexEnts: `// Create Alice or update her role to admin.
+        const existing = await ctx.table("users").get("email", "alice@prisma.io");
+        const alice = await ((existing !== null
+          ? existing.patch({role: 'ADMIN'})
+          : ctx.table("users").insert({
+            name: 'Alice',
+            email: 'alice@prisma.io',
+            country: 'England',
+            role: 'ADMIN',
+            age: 43,
+          })).get())`,
       },
     ],
   },
@@ -677,6 +795,34 @@ enum Role {
           })
             .index("postId", ["postId"])
             .index("categoryId", ["categoryId"]),
+        });
+        `,
+        convexEnts: `// This is your optional Convex schema.
+        import { defineEntSchema, defineEnt } from "convex/server";
+        import { v } from "convex/values";
+        
+        export default defineEntSchema({
+          users: defineEnt({
+            name: v.string(),
+            age: v.int64(),
+            role: v.union(v.literal("USER"), v.literal("ADMIN")),
+            country: v.string(),
+          }).field("email", v.string(), {unique: true})
+          .edge("profile", {optional: true})
+          .edges("posts", {ref: "authorId"}),
+
+          profiles: defineEnt({
+            bio: v.string(),
+          }).edge("user"),
+
+          posts: defineEnt({
+            title: v.string(),
+            published: v.bool(),
+          }).edge("users", {field: "authorId"}),
+
+          categories: defineEnt({
+            name: v.string(),
+          }).edges("posts"),
         });
         `,
       },
