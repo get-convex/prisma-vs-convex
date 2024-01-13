@@ -12,7 +12,7 @@ export function CodeBlock({ text }: { text: string }) {
   return (
     <AfterSSR>
       <div>
-        <div className="rounded-lg overflow-hidden border">
+        <div className="rounded-lg overflow-hidden border text-[0.7875rem] !font-normal">
           <CodeBlockInner text={text} />
         </div>
       </div>
