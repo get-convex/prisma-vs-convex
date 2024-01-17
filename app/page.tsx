@@ -1,6 +1,7 @@
 import { Browser } from "@/app/Browser";
 import { formattedCode } from "@/app/formattedCode";
 import { SECTIONS } from "@/app/snippets";
+import { Code } from "@/components/typography/code";
 import { Link } from "@/components/typography/link";
 
 export default async function Home() {
@@ -16,6 +17,17 @@ export default async function Home() {
         translated to{" "}
         <Link href="https://convex.dev" target="_blank">
           Convex
+        </Link>
+        ,{" "}
+        <Link
+          href="https://www.npmjs.com/package/convex-helpers"
+          target="_blank"
+        >
+          <Code>convex-helpers</Code>
+        </Link>{" "}
+        and{" "}
+        <Link href="https://labs.convex.dev/convex-ents" target="_blank">
+          Convex Ents
         </Link>
         .
       </p>

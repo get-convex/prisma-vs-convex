@@ -49,13 +49,21 @@ const user = await prisma.user.findUnique({
   },
 })`,
         convex: `// Select specific fields
-const {name, email} = (await ctx.db.query("users").withIndex("email", q=>
-q.eq("email", "ada@prisma.io")).unique()) ?? {};
-const user = {name, email}`,
+const user = (await ctx.db.query("users").withIndex("email", q=>
+q.eq("email", "ada@prisma.io")).unique());
+if (user === null) {
+  return null;
+}
+const {name, email} = user;
+return {name, email}`,
         convexEnts: `// Select specific fields
-        const {name, email} = await ctx.table("users")
-          .get("email", "ada@prisma.io")
-        return {name, email}`,
+        const user = (await ctx.table("users")
+          .get("email", "ada@prisma.io"))
+          if (user === null) {
+            return null;
+          }
+          const {name, email} = user;
+          return {name, email}`,
       },
     ],
     "Traverse Relations": [

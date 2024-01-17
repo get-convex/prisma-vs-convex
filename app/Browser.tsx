@@ -1,19 +1,18 @@
 "use client";
 
 import { CodeBlock } from "@/app/CodeBlock";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Toggle } from "@/components/ui/toggle";
-import { cn } from "@/lib/utils";
-import { useState } from "react";
 import {
   Select,
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Toggle } from "@/components/ui/toggle";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 export function Browser({
   sections,
@@ -30,7 +29,7 @@ export function Browser({
     Object.keys(Object.values(sections)[0])[0],
   ]);
   const [left, setLeft] = useState("prisma");
-  const [right, setRight] = useState("convex");
+  const [right, setRight] = useState("convexEnts");
   return (
     <div className="flex flex-col">
       <div className="flex justify-between sticky top-0 z-50 bg-background/90 py-4 gap-2">
