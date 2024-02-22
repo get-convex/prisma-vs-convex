@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toggle } from "@/components/ui/toggle";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { parseAsString, useQueryState } from "nuqs";
 
 export function Browser({
   sections,
@@ -28,8 +29,14 @@ export function Browser({
     Object.keys(sections)[0],
     Object.keys(Object.values(sections)[0])[0],
   ]);
-  const [left, setLeft] = useState("prisma");
-  const [right, setRight] = useState("convexEnts");
+  const [left, setLeft] = useQueryState(
+    "left",
+    parseAsString.withDefault("prisma")
+  );
+  const [right, setRight] = useQueryState(
+    "right",
+    parseAsString.withDefault("convex")
+  );
   return (
     <div className="flex flex-col">
       <div className="flex justify-between sticky top-0 z-50 bg-background/90 py-4 gap-2">
