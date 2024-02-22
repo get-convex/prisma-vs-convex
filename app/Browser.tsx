@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toggle } from "@/components/ui/toggle";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { parseAsString, useQueryState } from "nuqs";
+import { parseAsArrayOf, parseAsString, useQueryState } from "nuqs";
 
 export function Browser({
   sections,
@@ -25,10 +25,14 @@ export function Browser({
   formattedCodes: [string, string, Record<string, string>][];
 }) {
   const [showAll, setShowAll] = useState(false);
-  const [selected, setSelected] = useState([
-    Object.keys(sections)[0],
-    Object.keys(Object.values(sections)[0])[0],
-  ]);
+  const [selected, setSelected] = useQueryState(
+    "selected",
+    parseAsArrayOf(parseAsString).withDefault([
+      Object.keys(sections)[0],
+      Object.keys(Object.values(sections)[0])[0],
+    ])
+  );
+
   const [left, setLeft] = useQueryState(
     "left",
     parseAsString.withDefault("prisma")
