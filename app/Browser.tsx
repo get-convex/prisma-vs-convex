@@ -54,9 +54,12 @@ export function Browser({
                 <TabsTrigger
                   key={section}
                   value={section}
-                  onClick={() =>
-                    setSelected([section, Object.keys(sections[section])[0]])
-                  }
+                  onClick={() => {
+                    void setSelected([
+                      section,
+                      Object.keys(sections[section])[0],
+                    ]);
+                  }}
                 >
                   {section}
                 </TabsTrigger>
@@ -71,7 +74,9 @@ export function Browser({
                       <TabsTrigger
                         key={subsection}
                         value={subsection}
-                        onClick={() => setSelected([section, subsection])}
+                        onClick={() => {
+                          void setSelected([section, subsection]);
+                        }}
                       >
                         {subsection}
                       </TabsTrigger>
@@ -82,8 +87,18 @@ export function Browser({
             ))}
           </Tabs>
         </div>
-        <VariantSelector value={left} onValueChange={setLeft} />
-        <VariantSelector value={right} onValueChange={setRight} />
+        <VariantSelector
+          value={left}
+          onValueChange={(newVal) => {
+            void setLeft(newVal);
+          }}
+        />
+        <VariantSelector
+          value={right}
+          onValueChange={(newVal) => {
+            void setRight(newVal);
+          }}
+        />
         <Toggle pressed={showAll} onPressedChange={() => setShowAll(!showAll)}>
           Show all
         </Toggle>
