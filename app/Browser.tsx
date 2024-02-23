@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toggle } from "@/components/ui/toggle";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { parseAsArrayOf, parseAsString, useQueryState } from "nuqs";
 
 export function Browser({
   sections,
@@ -24,12 +25,22 @@ export function Browser({
   formattedCodes: [string, string, Record<string, string>][];
 }) {
   const [showAll, setShowAll] = useState(false);
-  const [selected, setSelected] = useState([
-    Object.keys(sections)[0],
-    Object.keys(Object.values(sections)[0])[0],
-  ]);
-  const [left, setLeft] = useState("prisma");
-  const [right, setRight] = useState("convexEnts");
+  const [selected, setSelected] = useQueryState(
+    "selected",
+    parseAsArrayOf(parseAsString).withDefault([
+      Object.keys(sections)[0],
+      Object.keys(Object.values(sections)[0])[0],
+    ])
+  );
+
+  const [left, setLeft] = useQueryState(
+    "left",
+    parseAsString.withDefault("prisma")
+  );
+  const [right, setRight] = useQueryState(
+    "right",
+    parseAsString.withDefault("convex")
+  );
   return (
     <div className="flex flex-col">
       <div className="flex justify-between sticky top-0 z-50 bg-background/90 py-4 gap-2">
@@ -43,9 +54,12 @@ export function Browser({
                 <TabsTrigger
                   key={section}
                   value={section}
-                  onClick={() =>
-                    setSelected([section, Object.keys(sections[section])[0]])
-                  }
+                  onClick={() => {
+                    void setSelected([
+                      section,
+                      Object.keys(sections[section])[0],
+                    ]);
+                  }}
                 >
                   {section}
                 </TabsTrigger>
@@ -60,7 +74,9 @@ export function Browser({
                       <TabsTrigger
                         key={subsection}
                         value={subsection}
-                        onClick={() => setSelected([section, subsection])}
+                        onClick={() => {
+                          void setSelected([section, subsection]);
+                        }}
                       >
                         {subsection}
                       </TabsTrigger>
@@ -71,8 +87,18 @@ export function Browser({
             ))}
           </Tabs>
         </div>
-        <VariantSelector value={left} onValueChange={setLeft} />
-        <VariantSelector value={right} onValueChange={setRight} />
+        <VariantSelector
+          value={left}
+          onValueChange={(newVal) => {
+            void setLeft(newVal);
+          }}
+        />
+        <VariantSelector
+          value={right}
+          onValueChange={(newVal) => {
+            void setRight(newVal);
+          }}
+        />
         <Toggle pressed={showAll} onPressedChange={() => setShowAll(!showAll)}>
           Show all
         </Toggle>
